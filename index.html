@@ -55,7 +55,8 @@
       background: var(--surface); border: 1px solid var(--border);
       cursor: pointer; z-index: 100;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; transition: opacity 0.2s;
+      font-size: 15px; color: var(--muted);
+      transition: opacity 0.2s, color 0.2s;
     }
     #theme-toggle:hover { opacity: 0.7; }
 
@@ -333,7 +334,7 @@
 
   <div id="logo">Kerning</div>
   <div id="round-label"></div>
-  <button id="theme-toggle" title="Toggle theme">☀️</button>
+  <button id="theme-toggle" title="Toggle theme">☀</button>
 
   <!-- ── INTRO ──────────────────────────────────── -->
   <div class="screen active" id="s-intro">
@@ -925,7 +926,7 @@
     const themeBtn = document.getElementById('theme-toggle');
     themeBtn.addEventListener('click', () => {
       const isLight = document.documentElement.classList.toggle('light');
-      themeBtn.textContent = isLight ? '🌙' : '☀️';
+      themeBtn.textContent = isLight ? '☽' : '☀';
     });
 
     document.getElementById('btn-play').addEventListener('click', startGame);
