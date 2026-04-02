@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kerning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300..700&family=Fraunces:opsz,wght@9..144,100..900&family=Inter:wght@100..900&family=Playfair+Display:wght@400..900&family=Raleway:wght@100..900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    :root {
+      --bg:      #0a0a0a;
+      --surface: #161616;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f0f0f0;
+      --muted:   #505050;
+      --dim:     #1e1e1e;
+    }
+    :root.light {
+      --bg:      #f5f5f3;
+      --surface: #ebebea;
+      --border:  rgba(0,0,0,0.08);
+      --text:    #111111;
+      --muted:   #999999;
+      --dim:     #dededc;
+    }
+
+    html, body {
+      height: 100%; height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── FIXED CHROME ─────────────────────────────── */
+    #logo {
+      position: fixed; top: 24px; left: 24px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      z-index: 100; opacity: 1;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    #logo:hover { opacity: 0.45; }
+
+    #theme-toggle {
+      position: fixed; bottom: 24px; right: 24px;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      cursor: pointer; z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; transition: opacity 0.2s;
+    }
+    #theme-toggle:hover { opacity: 0.7; }
+
+    #round-label {
+      position: fixed; top: 24px; right: 24px;
+      font-size: 12px; color: var(--muted);
+      font-weight: 500; letter-spacing: 0.06em;
+      z-index: 100; opacity: 0; transition: opacity 0.35s;
+    }
+    #round-label.show { opacity: 1; }
+
+    /* ── SCREENS ─────────────────────────────────── */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 28px 56px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .screen.active { opacity: 1; pointer-events: all; }
+
+    /* Memorize: word roughly centered, timer below */
+    #s-memorize {
+      justify-content: center;
+    }
+
+    /* Picker: whole group (word + sliders + button) centered as a unit */
+    #s-picker {
+      justify-content: center;
+    }
+
+    /* Sliders + button slide up from below when picker appears */
+    @keyframes slidersIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .sliders-wrap.animate, #btn-submit.animate {
+      animation: slidersIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+    #btn-submit.animate {
+      animation-delay: 0.04s;
+    }
+
+    /* ── INTRO ───────────────────────────────────── */
+    #intro-title {
+      font-size: clamp(52px, 15vw, 100px);
+      font-weight: 800; letter-spacing: -0.03em; line-height: 1;
+      margin-bottom: 16px;
+      transition: font-variation-settings 0.7s ease, letter-spacing 0.7s ease, opacity 0.22s ease;
+    }
+    #intro-desc {
+      font-size: 15px; color: var(--muted);
+      text-align: center; line-height: 1.65;
+      max-width: 260px; margin-bottom: 52px;
+    }
+
+    /* ── BUTTONS ─────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      font-family: inherit; font-size: 14px; font-weight: 600; letter-spacing: 0.03em;
+      padding: 13px 28px; border-radius: 100px; border: none; cursor: pointer;
+      touch-action: manipulation;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary { background: var(--text); color: var(--bg); }
+    .btn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+    /* ── COUNTDOWN ───────────────────────────────── */
+    #countdown-num {
+      font-size: clamp(100px, 32vw, 200px);
+      font-weight: 900; letter-spacing: -0.05em; line-height: 1;
+    }
+    @keyframes countPop {
+      0%   { opacity: 0; transform: scale(1.4); }
+      18%  { opacity: 1; transform: scale(1); }
+      75%  { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.8); }
+    }
+    .count-pop { animation: countPop 0.85s ease both; }
+
+    /* ── MEMORIZE ────────────────────────────────── */
+    #memorize-word {
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap; text-align: center;
+      height: 72px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    #memorize-timer {
+      font-size: 36px; font-weight: 300;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      margin-top: 28px;
+      color: var(--muted);
+      transition: color 0.4s ease;
+    }
+
+    #progress-bar-wrap {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 3px; background: var(--dim);
+    }
+    #progress-bar {
+      height: 100%; background: var(--text);
+      transform-origin: left; transform: scaleX(1);
+    }
+    #progress-bar.drain {
+      transition: transform var(--drain-dur, 3000ms) linear;
+      transform: scaleX(0);
+    }
+
+    /* ── PICKER ──────────────────────────────────── */
+    #picker-word {
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap; text-align: center;
+      height: 72px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 36px;
+      flex-shrink: 0;
+    }
+
+    .sliders-wrap {
+      display: flex; flex-direction: column; gap: 16px;
+      width: 100%; max-width: 360px;
+    }
+
+    .slider-row {
+      display: flex; align-items: center; gap: 14px;
+    }
+
+    .slider-label {
+      font-size: 10px; color: var(--muted);
+      letter-spacing: 0.16em; text-transform: uppercase; font-weight: 600;
+      width: 54px; flex-shrink: 0; text-align: right;
+    }
+
+    /* Track */
+    .slider-track {
+      flex: 1; height: 44px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      position: relative;
+      overflow: hidden;
+      cursor: ew-resize;
+      touch-action: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .slider-track.dragging {
+      border-color: rgba(255,255,255,0.22);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+    }
+
+    /* Subtle fill left of handle */
+    .slider-fill {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      background: rgba(255,255,255,0.04);
+      pointer-events: none;
+    }
+
+    /* Floating handle pill */
+    .slider-handle {
+      position: absolute;
+      top: 5px; bottom: 5px;
+      width: 36px;
+      background: var(--text);
+      border-radius: 14px;
+      pointer-events: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    /* Vertical grip marks */
+    .slider-handle::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 2px; height: 12px;
+      background: rgba(0,0,0,0.18);
+      border-radius: 1px;
+      box-shadow: -4px 0 0 rgba(0,0,0,0.12), 4px 0 0 rgba(0,0,0,0.12);
+    }
+    .slider-track.dragging .slider-handle {
+      box-shadow: 0 4px 18px rgba(0,0,0,0.65), 0 0 0 2px rgba(255,255,255,0.14);
+    }
+
+    .slider-readout {
+      font-size: 11px; color: var(--muted); font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      width: 48px; flex-shrink: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      height: 16px; line-height: 16px;
+    }
+
+    #btn-submit {
+      margin-top: 28px;
+      align-self: center;
+    }
+
+    /* ── RESULT ──────────────────────────────────── */
+    .result-score-wrap { display: flex; align-items: baseline; gap: 4px; }
+    #result-score-num {
+      font-size: clamp(72px, 22vw, 140px);
+      font-weight: 900; letter-spacing: -0.04em; line-height: 1;
+    }
+    #result-score-denom { font-size: 22px; color: var(--muted); font-weight: 400; }
+    #result-feedback {
+      font-size: 14px; color: var(--muted);
+      margin-top: 6px; margin-bottom: 28px; font-style: italic;
+    }
+
+    .compare-row {
+      display: flex; gap: 12px;
+      width: 100%; max-width: 400px; margin-bottom: 28px;
+    }
+    .compare-card {
+      flex: 1; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 16px;
+      padding: 16px 14px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      overflow: hidden;
+    }
+    .compare-tag {
+      font-size: 10px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600;
+    }
+    .compare-word {
+      font-family: 'Inter', sans-serif;
+      overflow: hidden; max-width: 100%;
+      white-space: nowrap; text-overflow: clip;
+    }
+    .compare-vals {
+      font-size: 10px; color: var(--muted);
+      text-align: center; line-height: 1.9;
+    }
+
+    /* ── FINAL ───────────────────────────────────── */
+    #final-score-num {
+      font-size: clamp(80px, 26vw, 160px);
+      font-weight: 900; letter-spacing: -0.04em; line-height: 1;
+    }
+    .final-denom {
+      font-size: 22px; color: var(--muted); font-weight: 400;
+      display: inline; vertical-align: baseline; margin-left: 4px;
+    }
+    #final-verdict {
+      font-size: 15px; color: var(--muted);
+      margin-top: 8px; margin-bottom: 36px;
+      font-style: italic; text-align: center;
+    }
+    .rounds-grid {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center; max-width: 380px; margin-bottom: 40px;
+    }
+    .round-chip {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 100px; padding: 7px 16px;
+      font-size: 13px; font-weight: 600;
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────── */
+    @media (max-height: 620px) {
+      .slider-track { height: 38px; }
+      #picker-word  { margin-bottom: 20px; }
+      .sliders-wrap { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="logo">Kerning</div>
+  <div id="round-label"></div>
+  <button id="theme-toggle" title="Toggle theme">☀️</button>
+
+  <!-- ── INTRO ──────────────────────────────────── -->
+  <div class="screen active" id="s-intro">
+    <div id="intro-title">Kerning</div>
+    <div id="intro-desc">Your eye isn't as good as you think.</div>
+    <button class="btn btn-primary" id="btn-play">Play</button>
+  </div>
+
+  <!-- ── COUNTDOWN ──────────────────────────────── -->
+  <div class="screen" id="s-countdown">
+    <div id="countdown-num"></div>
+  </div>
+
+  <!-- ── MEMORIZE ───────────────────────────────── -->
+  <div class="screen" id="s-memorize">
+    <div id="memorize-word"></div>
+    <div id="memorize-timer">3.0</div>
+    <div id="progress-bar-wrap">
+      <div id="progress-bar"></div>
+    </div>
+  </div>
+
+  <!-- ── PICKER ─────────────────────────────────── -->
+  <div class="screen" id="s-picker">
+    <div id="picker-word"></div>
+    <div class="sliders-wrap">
+
+      <div class="slider-row">
+        <div class="slider-label">Font</div>
+        <div class="slider-track" id="track-font">
+          <div class="slider-fill"   id="fill-font"></div>
+          <div class="slider-handle" id="handle-font"></div>
+        </div>
+        <div class="slider-readout" id="readout-font">Inter</div>
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label">Weight</div>
+        <div class="slider-track" id="track-weight">
+          <div class="slider-fill"   id="fill-weight"></div>
+          <div class="slider-handle" id="handle-weight"></div>
+        </div>
+        <div class="slider-readout" id="readout-weight">400</div>
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label">Tracking</div>
+        <div class="slider-track" id="track-spacing">
+          <div class="slider-fill"   id="fill-spacing"></div>
+          <div class="slider-handle" id="handle-spacing"></div>
+        </div>
+        <div class="slider-readout" id="readout-spacing">+0px</div>
+      </div>
+
+    </div>
+    <button class="btn btn-primary" id="btn-submit">Done</button>
+  </div>
+
+  <!-- ── RESULT ─────────────────────────────────── -->
+  <div class="screen" id="s-result">
+    <div class="result-score-wrap">
+      <span id="result-score-num"></span>
+      <span id="result-score-denom">/10</span>
+    </div>
+    <div id="result-feedback"></div>
+    <div class="compare-row" id="compare-row"></div>
+    <button class="btn btn-primary" id="btn-next">Next round →</button>
+  </div>
+
+  <!-- ── FINAL ──────────────────────────────────── -->
+  <div class="screen" id="s-final">
+    <div>
+      <span id="final-score-num"></span><span class="final-denom">/50</span>
+    </div>
+    <div id="final-verdict"></div>
+    <div class="rounds-grid" id="rounds-grid"></div>
+    <button class="btn btn-primary" id="btn-replay">Play again</button>
+  </div>
+
+  <script>
+    // ── CONFIG ─────────────────────────────────────
+    const FONTS = [
+      { name: 'Inter',              family: "'Inter', sans-serif",         wMin: 100, wMax: 900, cat: 'sans'  },
+      { name: 'Raleway',            family: "'Raleway', sans-serif",        wMin: 100, wMax: 900, cat: 'sans'  },
+      { name: 'Playfair Display',   family: "'Playfair Display', serif",    wMin: 400, wMax: 900, cat: 'serif' },
+      { name: 'Fraunces',           family: "'Fraunces', serif",            wMin: 100, wMax: 900, cat: 'serif' },
+      { name: 'Cormorant Garamond', family: "'Cormorant Garamond', serif",  wMin: 300, wMax: 700, cat: 'serif' },
+    ];
+
+    const WORDS = [
+      'kerning','typeface','leading','glyph','serif',
+      'weight','contrast','rhythm','baseline','ascender','optical','spacing',
+      'descent','x-height','ligature','italic','oblique','column',
+      'measure','widows','orphans','flush','ragged','display',
+      'caption','titling','humanist','grotesque','transitional',
+      'slab','blackletter','condensed','expanded','monospace','swash',
+      'bruno'
+    ];
+
+    const TOTAL_ROUNDS = 5;
+    const MEMORIZE_MS  = 4000;
+    const WORD_SIZE    = 54;
+    const CARD_SIZE    = 20;
+
+    const W_MIN = 100, W_MAX = 900;
+    const S_MIN = -2,  S_MAX = 20;
+    const HANDLE_W = 36;
+
+    // ── STATE ──────────────────────────────────────
+    let rounds   = [];
+    let attempts = [];
+    let curRound = 0;
+    let wNorm = 0.375; // weight  = 400
+    let sNorm = 0.091; // spacing = 0px
+    let fNorm = 0.5;   // font    = middle
+    let fontIdx = Math.floor(FONTS.length / 2);
+    let memorizeRAF = null;
+
+    // ── MATH ───────────────────────────────────────
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const lerp  = (a, b, t)   => a + (b - a) * t;
+
+    function normToWeight(n) {
+      return Math.round(lerp(W_MIN, W_MAX, n) / 10) * 10;
+    }
+    function normToSpacing(n) {
+      return Math.round(lerp(S_MIN, S_MAX, n) * 2) / 2;
+    }
+    function normToFontIdx(n) {
+      return Math.round(n * (FONTS.length - 1));
+    }
+
+    // Scoring: grace zone up to 6% of range = full credit, gentle slope after
+    function axisScore(err) {
+      const GRACE = 0.06;  // ≤6% off = perfect (≈48 weight units, ≈1.3px spacing)
+      const SLOPE = 1.6;   // zero at ~68% of range
+      if (err <= GRACE) return 1.0;
+      return Math.max(0, 1 - (err - GRACE) * SLOPE);
+    }
+
+    function fontScore(attemptName, targetName) {
+      if (attemptName === targetName) return 1.0;
+      const a = FONTS.find(f => f.name === attemptName);
+      const t = FONTS.find(f => f.name === targetName);
+      // Same category (both sans or both serif) = half credit
+      return (a && t && a.cat === t.cat) ? 0.6 : 0.0;
+    }
+
+    function scoreRound(attempt, target) {
+      const fs   = fontScore(attempt.font, target.font);
+      const wErr = Math.abs(attempt.w - target.w) / (W_MAX - W_MIN);
+      const sErr = Math.abs(attempt.s - target.s) / (S_MAX - S_MIN);
+      const raw  = (fs + axisScore(wErr) + axisScore(sErr)) / 3 * 10;
+      return Math.round(raw * 10) / 10;
+    }
+
+    const ROUND_MSGS = [
+      { min: 9.5, texts: [
+        "Okay, you've definitely done this before.",
+        "Are you a type designer? Be honest.",
+        "Your eye is frighteningly good.",
+        "That was almost suspicious.",
+      ]},
+      { min: 8, texts: [
+        "Your optometrist would be proud.",
+        "Sharp. Very sharp.",
+        "Not much gets past you.",
+        "You've got a good eye for this.",
+      ]},
+      { min: 6.5, texts: [
+        "Not bad. Your eye has opinions.",
+        "Solid. Room to grow, but solid.",
+        "You were paying attention. Mostly.",
+        "Getting somewhere.",
+      ]},
+      { min: 5, texts: [
+        "You were in the neighborhood.",
+        "Close enough to feel okay about.",
+        "The spirit was there.",
+        "Warmer than it could've been.",
+      ]},
+      { min: 3, texts: [
+        "A valiant guess. Wrong, but valiant.",
+        "Points for confidence.",
+        "You had a feeling. It was wrong.",
+        "At least you tried.",
+      ]},
+      { min: 0, texts: [
+        "Did you look at the screen at all?",
+        "That was a choice.",
+        "Bold strategy. Didn't pay off.",
+        "Your eyes were open, right?",
+      ]},
+    ];
+    const VERDICTS = [
+      { min: 45, texts: [
+        "You kern in your sleep. Seek help.",
+        "A typographer's typographer.",
+        "Your eye is a finely tuned instrument.",
+      ]},
+      { min: 36, texts: [
+        "A typography nerd in the making.",
+        "You clearly spend too much time on fonts.",
+        "Massimo Vignelli would nod approvingly.",
+      ]},
+      { min: 26, texts: [
+        "You've definitely opened InDesign once.",
+        "Better than most. Worse than some.",
+        "You have an eye. It just blinks a lot.",
+      ]},
+      { min: 14, texts: [
+        "Comic Sans would've been easier, huh.",
+        "Type is hard. You proved it.",
+        "You looked. That's the best we can say.",
+      ]},
+      { min: 0, texts: [
+        "Have you considered a career in audio?",
+        "Graphic design is not your passion.",
+        "The fonts did not cooperate. (They did.)",
+      ]},
+    ];
+
+    const pick    = arr => arr[Math.floor(Math.random() * arr.length)];
+    const getMsg     = s => pick((ROUND_MSGS.find(m => s >= m.min) || ROUND_MSGS.at(-1)).texts);
+    const getVerdict = t => pick((VERDICTS.find(v   => t >= v.min) || VERDICTS.at(-1)).texts);
+
+    // ── SCREEN ─────────────────────────────────────
+    function goTo(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function setChrome(_, roundText) {
+      const rl = document.getElementById('round-label');
+      if (roundText) { rl.textContent = roundText; rl.classList.add('show'); }
+      else           { rl.classList.remove('show'); }
+    }
+
+    document.getElementById('logo').addEventListener('click', () => {
+      if (memorizeRAF) cancelAnimationFrame(memorizeRAF);
+      goTo('s-intro');
+      setChrome(false, null);
+    });
+
+    // ── GAME FLOW ──────────────────────────────────
+    function startGame() {
+      const pool = [...WORDS].sort(() => Math.random() - 0.5);
+      rounds = pool.slice(0, TOTAL_ROUNDS).map(word => {
+        const font = FONTS[Math.floor(Math.random() * FONTS.length)];
+        const wOpts = [100,200,300,400,500,600,700,800,900]
+          .filter(w => w >= font.wMin && w <= font.wMax);
+        return {
+          word,
+          font: font.name,
+          w: wOpts[Math.floor(Math.random() * wOpts.length)],
+          s: Math.round((S_MIN + Math.random() * (S_MAX - S_MIN)) * 2) / 2,
+        };
+      });
+      attempts = [];
+      curRound = 0;
+      startRound();
+    }
+
+    function startRound() {
+      setChrome(true, `${curRound + 1} / ${TOTAL_ROUNDS}`);
+      runCountdown(showMemorize);
+    }
+
+    function runCountdown(onDone) {
+      goTo('s-countdown');
+      let count = 3;
+      const el = document.getElementById('countdown-num');
+      function tick() {
+        el.classList.remove('count-pop');
+        el.textContent = count;
+        void el.offsetWidth;
+        el.classList.add('count-pop');
+        if (count === 1) { setTimeout(onDone, 850); return; }
+        count--;
+        setTimeout(tick, 850);
+      }
+      tick();
+    }
+
+    function showMemorize() {
+      const r = rounds[curRound];
+      const fontObj = FONTS.find(f => f.name === r.font);
+      goTo('s-memorize');
+
+      // Style word
+      const wordEl = document.getElementById('memorize-word');
+      wordEl.textContent = r.word;
+      wordEl.style.fontFamily = fontObj.family;
+      wordEl.style.fontSize   = WORD_SIZE + 'px';
+      wordEl.style.fontVariationSettings = `'wght' ${r.w}`;
+      wordEl.style.fontWeight  = r.w;
+      wordEl.style.letterSpacing = r.s + 'px';
+
+      // Timer (rAF-driven, synced with progress bar)
+      const timerEl = document.getElementById('memorize-timer');
+      timerEl.style.color = 'var(--muted)';
+      const start = performance.now();
+      if (memorizeRAF) cancelAnimationFrame(memorizeRAF);
+
+      function tick(now) {
+        const elapsed   = now - start;
+        const remaining = Math.max(0, (MEMORIZE_MS - elapsed) / 1000);
+        timerEl.textContent = remaining.toFixed(1);
+        // Color shifts: neutral → orange → red
+        const p = elapsed / MEMORIZE_MS;
+        timerEl.style.color = p > 0.66 ? '#ff4f4f' : p > 0.33 ? '#ff9a3c' : 'var(--muted)';
+        if (elapsed < MEMORIZE_MS) memorizeRAF = requestAnimationFrame(tick);
+      }
+      memorizeRAF = requestAnimationFrame(tick);
+
+      // Progress bar drain (CSS transition)
+      const bar = document.getElementById('progress-bar');
+      bar.classList.remove('drain');
+      bar.style.transform = ''; // clear any inline override so CSS rule takes effect
+      bar.style.setProperty('--drain-dur', MEMORIZE_MS + 'ms');
+      requestAnimationFrame(() => requestAnimationFrame(() => bar.classList.add('drain')));
+
+      setTimeout(() => {
+        cancelAnimationFrame(memorizeRAF);
+        showPicker();
+      }, MEMORIZE_MS);
+    }
+
+    function showPicker() {
+      const r = rounds[curRound];
+
+      // Pre-populate picker word while still on memorize screen (invisible)
+      const el = document.getElementById('picker-word');
+      el.textContent = r.word;
+      el.style.fontSize = WORD_SIZE + 'px';
+      el.style.transition = 'none';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(10px)';
+
+      // Reset sliders before screen is visible
+      wNorm   = (400 - W_MIN) / (W_MAX - W_MIN);
+      sNorm   = (0   - S_MIN) / (S_MAX  - S_MIN);
+      fontIdx = Math.floor(FONTS.length / 2);
+      fNorm   = fontIdx / (FONTS.length - 1);
+      renderSlider('font');
+      renderSlider('weight');
+      renderSlider('spacing');
+      updatePreview();
+
+      // Kill sliders-wrap animation class so it starts fresh
+      const wrap = document.querySelector('.sliders-wrap');
+      const btn  = document.getElementById('btn-submit');
+      wrap.classList.remove('animate');
+      btn.classList.remove('animate');
+      wrap.style.opacity = '0';
+      btn.style.opacity = '0';
+
+      // Fade out memorize screen via the screen's own opacity transition
+      const memScreen = document.getElementById('s-memorize');
+      memScreen.style.transition = 'opacity 0.3s ease';
+      memScreen.style.opacity = '0';
+
+      setTimeout(() => {
+        // Switch screens (memorize already invisible)
+        goTo('s-picker');
+        memScreen.style.transition = '';
+        memScreen.style.opacity = '';
+
+        // Fade word in
+        el.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+        }));
+
+        // Sliders slide up shortly after
+        setTimeout(() => {
+          wrap.style.opacity = '';
+          btn.style.opacity = '';
+          wrap.classList.add('animate');
+          btn.classList.add('animate');
+        }, 80);
+      }, 320);
+    }
+
+    function submitAttempt() {
+      attempts.push({
+        font: FONTS[fontIdx].name,
+        w: normToWeight(wNorm),
+        s: normToSpacing(sNorm),
+      });
+      showResult();
+    }
+
+    function showResult() {
+      const r = rounds[curRound];
+      const a = attempts[curRound];
+      const score = scoreRound(a, r);
+
+      goTo('s-result');
+      document.getElementById('result-score-num').textContent = score.toFixed(1);
+      document.getElementById('result-feedback').textContent  = getMsg(score);
+
+      const sc = CARD_SIZE / WORD_SIZE;
+      const tFont = FONTS.find(f => f.name === r.font);
+      const pFont = FONTS.find(f => f.name === a.font) || FONTS[0];
+
+      document.getElementById('compare-row').innerHTML = `
+        <div class="compare-card">
+          <span class="compare-tag">Target</span>
+          <div class="compare-word" style="
+            font-family:${tFont.family};
+            font-variation-settings:'wght' ${r.w};
+            font-weight:${r.w};
+            letter-spacing:${(r.s * sc).toFixed(2)}px;
+            font-size:${CARD_SIZE}px;
+          ">${r.word}</div>
+          <div class="compare-vals" style="font-family:${tFont.family}">
+            ${r.font.toLowerCase()}<br>${r.w}wt · ${r.s >= 0 ? '+' : ''}${r.s}px
+          </div>
+        </div>
+        <div class="compare-card">
+          <span class="compare-tag">Yours</span>
+          <div class="compare-word" style="
+            font-family:${pFont.family};
+            font-variation-settings:'wght' ${a.w};
+            font-weight:${a.w};
+            letter-spacing:${(a.s * sc).toFixed(2)}px;
+            font-size:${CARD_SIZE}px;
+          ">${r.word}</div>
+          <div class="compare-vals" style="font-family:${pFont.family}">
+            ${a.font.toLowerCase()}<br>${a.w}wt · ${a.s >= 0 ? '+' : ''}${a.s}px
+          </div>
+        </div>`;
+
+      document.getElementById('btn-next').textContent =
+        curRound >= TOTAL_ROUNDS - 1 ? 'See results' : 'Next round →';
+    }
+
+    function nextRound() {
+      curRound++;
+      curRound >= TOTAL_ROUNDS ? showFinal() : startRound();
+    }
+
+    function showFinal() {
+      goTo('s-final');
+      setChrome(false, null);
+      const scores = attempts.map((a, i) => scoreRound(a, rounds[i]));
+      const total  = scores.reduce((s, v) => s + v, 0);
+      document.getElementById('final-score-num').textContent = total.toFixed(1);
+      document.getElementById('final-verdict').textContent   = getVerdict(total);
+      document.getElementById('rounds-grid').innerHTML = scores
+        .map((s, i) => `<div class="round-chip">${i + 1}. ${s.toFixed(1)}</div>`)
+        .join('');
+    }
+
+    // ── SLIDERS ────────────────────────────────────
+    function renderSlider(name) {
+      const handleEl  = document.getElementById('handle-' + name);
+      const fillEl    = document.getElementById('fill-'   + name);
+      const readoutEl = document.getElementById('readout-' + name);
+      const trackEl   = document.getElementById('track-'  + name);
+
+      let displayNorm;
+
+      if (name === 'font') {
+        const idx = normToFontIdx(fNorm);
+        fontIdx = idx;
+        displayNorm = fNorm;
+        readoutEl.style.fontFamily = FONTS[idx].family;
+        readoutEl.textContent = FONTS[idx].name;
+      } else if (name === 'weight') {
+        displayNorm = wNorm;
+        readoutEl.style.fontFamily = '';
+        readoutEl.textContent = normToWeight(wNorm);
+      } else {
+        displayNorm = sNorm;
+        readoutEl.style.fontFamily = '';
+        const s = normToSpacing(sNorm);
+        readoutEl.textContent = (s >= 0 ? '+' : '') + s + 'px';
+      }
+
+      const trackW  = trackEl.offsetWidth;
+      const leftPx  = displayNorm * (trackW - HANDLE_W);
+      handleEl.style.left = leftPx + 'px';
+      fillEl.style.width  = leftPx + 'px';
+    }
+
+    function updatePreview() {
+      const w    = normToWeight(wNorm);
+      const s    = normToSpacing(sNorm);
+      const font = FONTS[fontIdx];
+      const el   = document.getElementById('picker-word');
+      el.style.fontFamily = font.family;
+      el.style.fontVariationSettings = `'wght' ${w}`;
+      el.style.fontWeight    = w;
+      el.style.letterSpacing = s + 'px';
+    }
+
+    function initSlider(name) {
+      const track = document.getElementById('track-' + name);
+      let active = false;
+
+      function update(e) {
+        const rect    = track.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const norm    = clamp((clientX - rect.left) / rect.width, 0, 1);
+        if      (name === 'weight')  wNorm = norm;
+        else if (name === 'spacing') sNorm = norm;
+        else                          fNorm = norm;
+        renderSlider(name);
+        updatePreview();
+      }
+
+      function down(e) { active = true; track.classList.add('dragging'); update(e); e.preventDefault(); }
+      function move(e) { if (!active) return; update(e); e.preventDefault(); }
+      function up() {
+        if (!active) return;
+        active = false;
+        track.classList.remove('dragging');
+        if (name === 'font') {
+          // Spring-snap handle to the nearest font position on release
+          const idx = normToFontIdx(fNorm);
+          fontIdx = idx;
+          fNorm = idx / (FONTS.length - 1);
+          const handleEl = document.getElementById('handle-font');
+          const fillEl   = document.getElementById('fill-font');
+          const spring   = '0.25s cubic-bezier(0.34, 1.56, 0.64, 1)';
+          handleEl.style.transition = `left ${spring}`;
+          fillEl.style.transition   = `width ${spring}`;
+          renderSlider('font');
+          setTimeout(() => { handleEl.style.transition = ''; fillEl.style.transition = ''; }, 280);
+        }
+      }
+
+      track.addEventListener('mousedown',  down);
+      track.addEventListener('touchstart', down, { passive: false });
+      document.addEventListener('mousemove',  move);
+      document.addEventListener('touchmove',  move, { passive: false });
+      document.addEventListener('mouseup',    up);
+      document.addEventListener('touchend',   up);
+    }
+
+    // ── INTRO ANIMATION ────────────────────────────
+    const introStates = [
+      { font: 'Inter',              w: 200, s: '0em'    },
+      { font: 'Playfair Display',   w: 700, s: '-0.01em'},
+      { font: 'Raleway',            w: 300, s: '0.1em'  },
+      { font: 'Fraunces',           w: 800, s: '0em'    },
+      { font: 'Cormorant Garamond', w: 400, s: '0.04em' },
+      { font: 'Inter',              w: 900, s: '-0.02em'},
+    ];
+    let introIdx = 0;
+    let introCurrentFont = introStates[0].font;
+    const introEl = document.getElementById('intro-title');
+
+    const applyIntro = st => {
+      const f = FONTS.find(f => f.name === st.font);
+      const fontChanging = st.font !== introCurrentFont;
+      introCurrentFont = st.font;
+
+      if (fontChanging) {
+        // Crossfade: fade out → swap font → fade in
+        introEl.style.opacity = '0';
+        setTimeout(() => {
+          introEl.style.fontFamily = f.family;
+          introEl.style.fontVariationSettings = `'wght' ${st.w}`;
+          introEl.style.letterSpacing = st.s;
+          introEl.style.opacity = '1';
+        }, 230);
+      } else {
+        // Same font — let CSS transition handle weight/spacing smoothly
+        introEl.style.fontFamily = f.family;
+        introEl.style.fontVariationSettings = `'wght' ${st.w}`;
+        introEl.style.letterSpacing = st.s;
+      }
+    };
+
+    applyIntro(introStates[0]);
+    setInterval(() => {
+      introIdx = (introIdx + 1) % introStates.length;
+      applyIntro(introStates[introIdx]);
+    }, 2200);
+
+    // ── WIRE UP ────────────────────────────────────
+    initSlider('font');
+    initSlider('weight');
+    initSlider('spacing');
+
+    const themeBtn = document.getElementById('theme-toggle');
+    themeBtn.addEventListener('click', () => {
+      const isLight = document.documentElement.classList.toggle('light');
+      themeBtn.textContent = isLight ? '🌙' : '☀️';
+    });
+
+    document.getElementById('btn-play').addEventListener('click', startGame);
+    document.getElementById('btn-submit').addEventListener('click', submitAttempt);
+    document.getElementById('btn-next').addEventListener('click', nextRound);
+    document.getElementById('btn-replay').addEventListener('click', startGame);
+  </script>
+</body>
+</html>
