@@ -457,6 +457,8 @@
       a.preload = 'auto';
       return a;
     });
+    const resultAudio = new Audio('result.wav');
+    resultAudio.preload = 'auto';
     const MEMORIZE_MS  = 4000;
     const WORD_SIZE    = 54;
     const CARD_SIZE    = 20;
@@ -812,6 +814,8 @@
     function showFinal() {
       goTo('s-final');
       setChrome(false, null);
+      resultAudio.currentTime = 0;
+      resultAudio.play().catch(() => {});
       const scores = attempts.map((a, i) => scoreRound(a, rounds[i]));
       const total  = scores.reduce((s, v) => s + v, 0);
       document.getElementById('final-score-num').textContent = total.toFixed(1);
