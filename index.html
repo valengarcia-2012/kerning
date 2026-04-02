@@ -174,13 +174,17 @@
     }
 
     /* ── PICKER ──────────────────────────────────── */
-    #picker-word {
-      font-family: 'Inter', sans-serif;
-      white-space: nowrap; text-align: center;
+    #picker-word-wrap {
+      position: relative;
       height: 72px;
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 36px;
       flex-shrink: 0;
+    }
+    #picker-word-a, #picker-word-b {
+      position: absolute;
+      white-space: nowrap; text-align: center;
+      font-family: 'Inter', sans-serif;
     }
 
     .sliders-wrap {
@@ -325,7 +329,7 @@
     /* ── RESPONSIVE ──────────────────────────────── */
     @media (max-height: 620px) {
       .slider-track { height: 38px; }
-      #picker-word  { margin-bottom: 20px; }
+      #picker-word-wrap { margin-bottom: 20px; }
       .sliders-wrap { gap: 10px; }
     }
   </style>
@@ -334,7 +338,7 @@
 
   <div id="logo">Kerning</div>
   <div id="round-label"></div>
-  <button id="theme-toggle" title="Toggle theme">☀</button>
+  <button id="theme-toggle" title="Toggle theme">☀&#xFE0E;</button>
 
   <!-- ── INTRO ──────────────────────────────────── -->
   <div class="screen active" id="s-intro">
@@ -359,7 +363,10 @@
 
   <!-- ── PICKER ─────────────────────────────────── -->
   <div class="screen" id="s-picker">
-    <div id="picker-word"></div>
+    <div id="picker-word-wrap">
+      <div id="picker-word-a"></div>
+      <div id="picker-word-b"></div>
+    </div>
     <div class="sliders-wrap">
 
       <div class="slider-row">
@@ -665,13 +672,17 @@
     function showPicker() {
       const r = rounds[curRound];
 
-      // Pre-populate picker word while still on memorize screen (invisible)
-      const el = document.getElementById('picker-word');
-      el.textContent = r.word;
-      el.style.fontSize = WORD_SIZE + 'px';
-      el.style.transition = 'none';
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(10px)';
+      // Pre-populate picker words while still on memorize screen (invisible)
+      const wordWrap = document.getElementById('picker-word-wrap');
+      const elA      = document.getElementById('picker-word-a');
+      const elB      = document.getElementById('picker-word-b');
+      [elA, elB].forEach(el => {
+        el.textContent = r.word;
+        el.style.fontSize = WORD_SIZE + 'px';
+      });
+      wordWrap.style.transition = 'none';
+      wordWrap.style.opacity    = '0';
+      wordWrap.style.transform  = 'translateY(10px)';
 
       // Reset sliders before screen is visible
       wNorm   = (400 - W_MIN) / (W_MAX - W_MIN);
@@ -684,36 +695,36 @@
       updatePreview();
 
       // Kill sliders-wrap animation class so it starts fresh
-      const wrap = document.querySelector('.sliders-wrap');
-      const btn  = document.getElementById('btn-submit');
-      wrap.classList.remove('animate');
+      const slidersWrap = document.querySelector('.sliders-wrap');
+      const btn         = document.getElementById('btn-submit');
+      slidersWrap.classList.remove('animate');
       btn.classList.remove('animate');
-      wrap.style.opacity = '0';
-      btn.style.opacity = '0';
+      slidersWrap.style.opacity = '0';
+      btn.style.opacity         = '0';
 
       // Fade out memorize screen via the screen's own opacity transition
       const memScreen = document.getElementById('s-memorize');
       memScreen.style.transition = 'opacity 0.3s ease';
-      memScreen.style.opacity = '0';
+      memScreen.style.opacity    = '0';
 
       setTimeout(() => {
         // Switch screens (memorize already invisible)
         goTo('s-picker');
         memScreen.style.transition = '';
-        memScreen.style.opacity = '';
+        memScreen.style.opacity    = '';
 
-        // Fade word in
-        el.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+        // Fade word wrap in
+        wordWrap.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
         requestAnimationFrame(() => requestAnimationFrame(() => {
-          el.style.opacity = '1';
-          el.style.transform = 'translateY(0)';
+          wordWrap.style.opacity   = '1';
+          wordWrap.style.transform = 'translateY(0)';
         }));
 
         // Sliders slide up shortly after
         setTimeout(() => {
-          wrap.style.opacity = '';
-          btn.style.opacity = '';
-          wrap.classList.add('animate');
+          slidersWrap.style.opacity = '';
+          btn.style.opacity         = '';
+          slidersWrap.classList.add('animate');
           btn.classList.add('animate');
         }, 80);
       }, 320);
@@ -823,14 +834,28 @@
     }
 
     function updatePreview() {
-      const w    = normToWeight(wNorm);
-      const s    = normToSpacing(sNorm);
-      const font = FONTS[fontIdx];
-      const el   = document.getElementById('picker-word');
-      el.style.fontFamily = font.family;
-      el.style.fontVariationSettings = `'wght' ${w}`;
-      el.style.fontWeight    = w;
-      el.style.letterSpacing = s + 'px';
+      const w = normToWeight(wNorm);
+      const s = normToSpacing(sNorm);
+
+      // Continuous font blend: interpolate between adjacent fonts as knob moves
+      const rawIdx  = fNorm * (FONTS.length - 1);
+      const fromIdx = Math.min(Math.floor(rawIdx), FONTS.length - 2);
+      const toIdx   = fromIdx + 1;
+      const t       = rawIdx - fromIdx; // 0 → 1 blend between fromIdx and toIdx
+
+      const a = document.getElementById('picker-word-a');
+      const b = document.getElementById('picker-word-b');
+
+      [a, b].forEach((el, i) => {
+        const font = FONTS[i === 0 ? fromIdx : toIdx];
+        el.style.fontFamily            = font.family;
+        el.style.fontVariationSettings = `'wght' ${w}`;
+        el.style.fontWeight            = w;
+        el.style.letterSpacing         = s + 'px';
+      });
+
+      a.style.opacity = 1 - t;
+      b.style.opacity = t;
     }
 
     function initSlider(name) {
@@ -926,7 +951,7 @@
     const themeBtn = document.getElementById('theme-toggle');
     themeBtn.addEventListener('click', () => {
       const isLight = document.documentElement.classList.toggle('light');
-      themeBtn.textContent = isLight ? '☽' : '☀';
+      themeBtn.textContent = isLight ? '☽\uFE0E' : '☀\uFE0E';
     });
 
     document.getElementById('btn-play').addEventListener('click', startGame);
