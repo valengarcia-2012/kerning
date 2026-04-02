@@ -478,6 +478,17 @@
     clickAudio.preload = 'auto';
     const playClick = () => { clickAudio.currentTime = 0; clickAudio.play().catch(() => {}); };
 
+    // iOS unlock: silently prime all audio on first touch so they're decoded and ready
+    const allAudioElements = [...countdownAudio, resultAudio, clickAudio];
+    const unlockAudio = () => {
+      allAudioElements.forEach(a => {
+        a.muted = true;
+        a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => {});
+      });
+      document.removeEventListener('touchstart', unlockAudio);
+    };
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+
     // Buttons (including logo): play on click
     document.querySelectorAll('.btn').forEach(el => el.addEventListener('click', playClick));
     document.getElementById('logo').addEventListener('click', playClick);
