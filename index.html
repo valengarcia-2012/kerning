@@ -452,6 +452,11 @@
     ];
 
     const TOTAL_ROUNDS = 5;
+    const countdownAudio = [1,2,3,4,5].map(n => {
+      const a = new Audio(`countdown${n}.wav`);
+      a.preload = 'auto';
+      return a;
+    });
     const MEMORIZE_MS  = 4000;
     const WORD_SIZE    = 54;
     const CARD_SIZE    = 20;
@@ -623,6 +628,11 @@
       goTo('s-countdown');
       let count = 3;
       const el = document.getElementById('countdown-num');
+
+      // Play the audio track for this round (round 1 → track 0, etc.)
+      const audio = countdownAudio[curRound];
+      if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+
       function tick() {
         el.classList.remove('count-pop');
         el.textContent = count;
