@@ -785,7 +785,7 @@
       document.getElementById('final-score-num').textContent = total.toFixed(1);
       document.getElementById('final-verdict').textContent   = getVerdict(total);
       document.getElementById('rounds-grid').innerHTML = scores
-        .map((s, i) => `<div class="round-chip">${i + 1}. ${s.toFixed(1)}</div>`)
+        .map((s, i) => `<div class="round-chip"><span style="color:var(--muted);font-weight:400;font-size:10px;letter-spacing:0.1em">R${i + 1}</span>  ${s.toFixed(1)}</div>`)
         .join('');
     }
 
