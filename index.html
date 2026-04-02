@@ -49,8 +49,8 @@
     }
     #logo:hover { opacity: 0.45; }
 
-    #theme-toggle {
-      position: fixed; bottom: 24px; right: 24px;
+    #theme-toggle, #mute-toggle {
+      position: fixed; bottom: 24px;
       width: 36px; height: 36px; border-radius: 50%;
       background: var(--surface); border: 1px solid var(--border);
       cursor: pointer; z-index: 100;
@@ -58,7 +58,9 @@
       font-size: 15px; color: var(--muted);
       transition: opacity 0.2s, color 0.2s;
     }
-    #theme-toggle:hover { opacity: 0.7; }
+    #theme-toggle { right: 24px; }
+    #mute-toggle  { right: 68px; }
+    #theme-toggle:hover, #mute-toggle:hover { opacity: 0.7; }
 
     #round-label {
       position: fixed; top: 24px; right: 24px;
@@ -349,6 +351,18 @@
   <div id="logo">Kerning</div>
   <div id="round-label"></div>
   <button id="theme-toggle" title="Toggle theme">☀&#xFE0E;</button>
+  <button id="mute-toggle" title="Toggle sound">
+    <svg id="icon-sound" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+    </svg>
+    <svg id="icon-mute" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <line x1="23" y1="9" x2="17" y2="15"/>
+      <line x1="17" y1="9" x2="23" y2="15"/>
+    </svg>
+  </button>
 
   <!-- ── INTRO ──────────────────────────────────── -->
   <div class="screen active" id="s-intro">
@@ -995,6 +1009,15 @@
     themeBtn.addEventListener('click', () => {
       const isLight = document.documentElement.classList.toggle('light');
       themeBtn.textContent = isLight ? '☽\uFE0E' : '☀\uFE0E';
+    });
+
+    const allAudio = [...countdownAudio, resultAudio, clickAudio];
+    let muted = false;
+    document.getElementById('mute-toggle').addEventListener('click', () => {
+      muted = !muted;
+      allAudio.forEach(a => a.muted = muted);
+      document.getElementById('icon-sound').style.display = muted ? 'none' : '';
+      document.getElementById('icon-mute').style.display  = muted ? '' : 'none';
     });
 
     document.getElementById('btn-play').addEventListener('click', startGame);
