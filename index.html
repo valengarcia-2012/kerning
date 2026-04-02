@@ -483,9 +483,9 @@
     const unlockAudio = () => {
       allAudioElements.forEach(a => {
         a.muted = true;
-        a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => {});
+        const reset = () => { a.pause(); a.currentTime = 0; a.muted = false; };
+        a.play().then(reset).catch(reset);
       });
-      document.removeEventListener('touchstart', unlockAudio);
     };
     document.addEventListener('touchstart', unlockAudio, { once: true });
 
