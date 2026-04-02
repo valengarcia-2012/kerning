@@ -459,6 +459,13 @@
     });
     const resultAudio = new Audio('result.wav');
     resultAudio.preload = 'auto';
+
+    const clickAudio = new Audio('click.wav');
+    clickAudio.preload = 'auto';
+    document.addEventListener('click', () => {
+      clickAudio.currentTime = 0;
+      clickAudio.play().catch(() => {});
+    });
     const MEMORIZE_MS  = 4000;
     const WORD_SIZE    = 54;
     const CARD_SIZE    = 20;
@@ -475,7 +482,8 @@
     let sNorm = 0.091; // spacing = 0px
     let fNorm = 0.5;   // font    = middle
     let fontIdx = Math.floor(FONTS.length / 2);
-    let memorizeRAF = null;
+    let memorizeRAF     = null;
+    let memorizeTimeout = null;
 
     // ── MATH ───────────────────────────────────────
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -597,7 +605,10 @@
     }
 
     document.getElementById('logo').addEventListener('click', () => {
-      if (memorizeRAF) cancelAnimationFrame(memorizeRAF);
+      if (memorizeRAF)     cancelAnimationFrame(memorizeRAF);
+      if (memorizeTimeout) clearTimeout(memorizeTimeout);
+      memorizeRAF     = null;
+      memorizeTimeout = null;
       goTo('s-intro');
       setChrome(false, null);
     });
@@ -685,7 +696,7 @@
       bar.style.setProperty('--drain-dur', MEMORIZE_MS + 'ms');
       requestAnimationFrame(() => requestAnimationFrame(() => bar.classList.add('drain')));
 
-      setTimeout(() => {
+      memorizeTimeout = setTimeout(() => {
         cancelAnimationFrame(memorizeRAF);
         showPicker();
       }, MEMORIZE_MS);
