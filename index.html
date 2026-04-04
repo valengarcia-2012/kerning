@@ -428,7 +428,7 @@
   <div class="screen" id="s-result">
     <div class="result-score-wrap">
       <span id="result-score-num"></span>
-      <span id="result-score-denom">/10</span>
+      <span id="result-score-denom">/100</span>
     </div>
     <div id="result-feedback"></div>
     <div class="compare-row" id="compare-row"></div>
@@ -438,7 +438,7 @@
   <!-- ── FINAL ──────────────────────────────────── -->
   <div class="screen" id="s-final">
     <div>
-      <span id="final-score-num"></span><span class="final-denom">/50</span>
+      <span id="final-score-num"></span><span class="final-denom">/500</span>
     </div>
     <div id="final-verdict"></div>
     <div class="rounds-grid" id="rounds-grid"></div>
@@ -551,36 +551,36 @@
       const fs   = fontScore(attempt.font, target.font);
       const wErr = Math.abs(attempt.w - target.w) / (W_MAX - W_MIN);
       const sErr = Math.abs(attempt.s - target.s) / (S_MAX - S_MIN);
-      const raw  = (fs + axisScore(wErr) + axisScore(sErr)) / 3 * 10;
-      return Math.round(raw * 10) / 10;
+      const raw  = (fs + axisScore(wErr) + axisScore(sErr)) / 3 * 100;
+      return Math.round(raw);
     }
 
     const ROUND_MSGS = [
-      { min: 9.5, texts: [
+      { min: 95, texts: [
         "Okay, you've definitely done this before.",
         "Are you a type designer? Be honest.",
         "Your eye is frighteningly good.",
         "That was almost suspicious.",
       ]},
-      { min: 8, texts: [
+      { min: 80, texts: [
         "Your optometrist would be proud.",
         "Sharp. Very sharp.",
         "Not much gets past you.",
         "You've got a good eye for this.",
       ]},
-      { min: 6.5, texts: [
+      { min: 65, texts: [
         "Not bad. Your eye has opinions.",
         "Solid. Room to grow, but solid.",
         "You were paying attention. Mostly.",
         "Getting somewhere.",
       ]},
-      { min: 5, texts: [
+      { min: 50, texts: [
         "You were in the neighborhood.",
         "Close enough to feel okay about.",
         "The spirit was there.",
         "Warmer than it could've been.",
       ]},
-      { min: 3, texts: [
+      { min: 30, texts: [
         "A valiant guess. Wrong, but valiant.",
         "Points for confidence.",
         "You had a feeling. It was wrong.",
@@ -594,22 +594,22 @@
       ]},
     ];
     const VERDICTS = [
-      { min: 45, texts: [
+      { min: 450, texts: [
         "You kern in your sleep. Seek help.",
         "A typographer's typographer.",
         "Your eye is a finely tuned instrument.",
       ]},
-      { min: 36, texts: [
+      { min: 360, texts: [
         "A typography nerd in the making.",
         "You clearly spend too much time on fonts.",
         "Massimo Vignelli would nod approvingly.",
       ]},
-      { min: 26, texts: [
+      { min: 260, texts: [
         "You've definitely opened InDesign once.",
         "Better than most. Worse than some.",
         "You have an eye. It just blinks a lot.",
       ]},
-      { min: 14, texts: [
+      { min: 140, texts: [
         "Comic Sans would've been easier, huh.",
         "Type is hard. You proved it.",
         "You looked. That's the best we can say.",
@@ -810,7 +810,7 @@
       const score = scoreRound(a, r);
 
       goTo('s-result');
-      document.getElementById('result-score-num').textContent = score.toFixed(1);
+      document.getElementById('result-score-num').textContent = score;
       document.getElementById('result-feedback').textContent  = getMsg(score);
 
       const sc = CARD_SIZE / WORD_SIZE;
@@ -861,10 +861,10 @@
       resultAudio.play().catch(() => {});
       const scores = attempts.map((a, i) => scoreRound(a, rounds[i]));
       const total  = scores.reduce((s, v) => s + v, 0);
-      document.getElementById('final-score-num').textContent = total.toFixed(1);
+      document.getElementById('final-score-num').textContent = total;
       document.getElementById('final-verdict').textContent   = getVerdict(total);
       document.getElementById('rounds-grid').innerHTML = scores
-        .map((s) => `<div class="round-chip">${s.toFixed(1)}</div>`)
+        .map((s) => `<div class="round-chip">${s}</div>`)
         .join('');
     }
 
